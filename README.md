@@ -1,22 +1,25 @@
 # Telegram Stickers for WordPress
 
-A standalone WordPress plugin for making sticker packs from Media Library images
-or importing static Telegram and Signal sticker packs. The optional Cloudflare
-Worker serves Telegram imports; Signal imports fetch directly from Signal's CDN.
-The block chooses one sticker per post. Animated and video stickers are skipped
-in this MVP.
+**By alyx.** Make sticker packs from your WordPress Media Library, or import
+static Telegram and Signal packs. Then choose a sticker in the block editor.
+Imported images live on your site, so published posts use local attachments.
 
-TStickers is a Python downloader and format converter. Its useful pattern here is
-looking up a set with the Telegram Bot API, then fetching each sticker file. For
-static stickers, WordPress can perform that flow directly in PHP and store the
-original WebP or PNG. The Python conversion stack is only needed if animated
-formats or extra output formats are added later.
+- **Make your own:** collect, reorder, and edit packs from images you already have.
+- **Import:** paste a Telegram or Signal pack link; imports can be retried.
+- **Write:** choose a pack and sticker from a searchable grid in the Sticker block.
+
+Animated and video stickers are skipped in this MVP.
 
 ## WordPress plugin
 
-Install the release ZIP or copy `plugin/` to
+Install the attached GitHub Release ZIP through **Plugins → Add New → Upload
+Plugin**, or copy `plugin/` to
 `wp-content/plugins/telegram-stickers/`, then activate **Telegram Stickers**.
 Requires WordPress 6.7+ and PHP 8.1+.
+
+Open **Media → Sticker Packs** to make or import a pack. Anyone with
+`upload_files` can use this screen. In a post, add the **Sticker** block and
+choose a pack, an image, its display size, and alternative text.
 
 An administrator opens **Media → Sticker Packs → Connection settings** and chooses:
 
@@ -25,8 +28,8 @@ An administrator opens **Media → Sticker Packs → Connection settings** and c
 - **My Telegram bot token:** enter a token obtained from BotFather. The token stays
   in a non-autoloaded WordPress option and is never passed to editor JavaScript.
 
-Anyone with `upload_files` can open **Media → Sticker Packs** and create a pack
-from PNG, WebP, or JPEG images already in the Media Library or upload new ones.
+Create a pack from PNG, WebP, or JPEG images already in the Media Library or
+upload new ones.
 Images can be reordered or removed. Manual packs are shared for use; the creator
 or an administrator can edit them. Removing an image from a pack leaves the Media
 Library file and existing post render intact. Manual packs need no Telegram service.
@@ -42,9 +45,21 @@ Static PNG files are supported too; animated APNG and WebP files are skipped.
 [signalstickers-client project](https://github.com/signalstickers/signalstickers-client/blob/master/signalstickers_client/utils/ca/cacert.pem).
 The CDN request verifies against it; maintainers should review it before its
 2032 expiration.
-The **Sticker** block presents a
-pack selector, a keyboard-accessible sticker grid, a filter, a live preview,
-display size, and alternative text. Published markup uses local attachments.
+The **Sticker** block presents a pack selector, a keyboard-accessible sticker
+grid, a filter, a live preview, display size, and alternative text.
+
+## License and acknowledgments
+
+Copyright © 2026 alyx. Original plugin and Worker code is licensed under
+**GPL-3.0-or-later**; see [LICENSE](LICENSE). The WordPress ZIP includes the
+license and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+[TStickers](https://github.com/FHPythonUtils/TStickers) (MIT) inspired the
+Telegram import flow. [signalstickers-client](https://github.com/signalstickers/signalstickers-client)
+(LGPLv3) documented the Signal sticker protocol and supplied the bundled Signal
+CA certificate. Their Python code and dependencies are not shipped. See the
+notices for attribution and the included LGPLv3 text. This is an independent
+plugin, unaffiliated with Telegram or Signal.
 
 ## Local Worker
 

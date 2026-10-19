@@ -3,10 +3,12 @@
  * Plugin Name: Telegram Stickers
  * Description: Create sticker packs from your media or import them from Telegram and Signal for use in the block editor.
  * Version: 0.3.0
+ * Author: alyx
  * Requires at least: 6.7
  * Requires PHP: 8.1
  * Text Domain: telegram-stickers
- * License: GPL-2.0-or-later
+ * License: GPL-3.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  */
 
 defined( 'ABSPATH' ) || exit;

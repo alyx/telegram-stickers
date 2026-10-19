@@ -1,6 +1,7 @@
 {
   "name": "telegram-stickers-dev",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "lint:js": "eslint plugin/assets/*.js worker/src/*.js worker/test/*.js",
     "lint:css": "stylelint 'plugin/assets/*.css'",

@@ -1,6 +1,7 @@
 {
   "name": "telegram-stickers-worker",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --ip 127.0.0.1 --port 8787 --log-level error --show-interactive-dev-session=false",

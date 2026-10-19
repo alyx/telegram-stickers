@@ -25,6 +25,8 @@ if f"Stable tag: {version}" not in (PLUGIN / "readme.txt").read_text():
     raise SystemExit("Plugin readme stable tag does not match its header")
 files = [
     ROOT / "LICENSE",
+    ROOT / "THIRD_PARTY_NOTICES.md",
+    ROOT / "licenses" / "signalstickers-client-LGPL-3.0.txt",
     PLUGIN / "telegram-stickers.php",
     PLUGIN / "block.json",
     PLUGIN / "readme.txt",
@@ -40,7 +42,7 @@ output = ROOT / "dist" / f"telegram-stickers-{version}.zip"
 output.parent.mkdir(exist_ok=True)
 with ZipFile(output, "w") as archive:
     for path in files:
-        relative = Path("LICENSE") if path == ROOT / "LICENSE" else path.relative_to(PLUGIN)
+        relative = path.relative_to(PLUGIN) if path.is_relative_to(PLUGIN) else path.relative_to(ROOT)
         entry = ZipInfo(str(Path("telegram-stickers") / relative))
         entry.date_time = (1980, 1, 1, 0, 0, 0)
         entry.external_attr = 0o644 << 16

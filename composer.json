@@ -2,7 +2,7 @@
   "name": "alyx/telegram-stickers",
   "description": "Development tools for the Telegram Stickers WordPress plugin",
   "type": "project",
-  "license": "GPL-2.0-or-later",
+  "license": "GPL-3.0-or-later",
   "private": true,
   "require-dev": {
     "wp-coding-standards/wpcs": "^3.0"
