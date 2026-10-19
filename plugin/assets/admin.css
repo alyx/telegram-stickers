@@ -1,0 +1,93 @@
+.tsp-admin {
+	max-width: 1050px;
+}
+
+.tsp-settings,
+.tsp-import-box {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 5px;
+	margin: 22px 0;
+	padding: 18px 22px;
+}
+
+.tsp-settings summary {
+	cursor: pointer;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.tsp-settings form {
+	padding-top: 8px;
+}
+
+.tsp-import-box h2 {
+	margin-top: 0;
+}
+
+.tsp-import-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 9px;
+	margin-top: 8px;
+}
+
+.tsp-import-row input {
+	min-width: min(100%, 420px);
+}
+
+#tsp-import-status {
+	margin-top: 12px;
+	min-height: 20px;
+}
+
+#tsp-import-progress {
+	display: block;
+	margin-top: 8px;
+	width: min(100%, 460px);
+}
+
+#tsp-import-progress[hidden] {
+	display: none;
+}
+
+.tsp-success {
+	color: #1a6b30;
+}
+
+.tsp-error {
+	color: #b32d2e;
+}
+
+.tsp-pack-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 14px;
+}
+
+.tsp-pack-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 5px;
+	padding: 14px;
+}
+
+.tsp-pack-card h3 {
+	margin: 0 0 5px;
+}
+
+.tsp-pack-card p {
+	color: #50575e;
+	margin: 0 0 10px;
+}
+
+.tsp-pack-previews {
+	display: flex;
+	gap: 4px;
+	min-height: 48px;
+	margin-bottom: 10px;
+}
+
+.tsp-pack-previews img {
+	object-fit: contain;
+}

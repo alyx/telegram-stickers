@@ -1,0 +1,6 @@
+name = "telegram-stickers-proxy"
+main = "src/index.js"
+compatibility_date = "2026-08-18"
+
+# For local development, place TELEGRAM_BOT_TOKEN and TICKET_SECRET in .dev.vars.
+# The MVP intentionally has no site authentication or quotas.

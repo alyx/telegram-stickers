@@ -1,0 +1,20 @@
+{
+  "name": "telegram-stickers-dev",
+  "private": true,
+  "scripts": {
+    "lint:js": "eslint plugin/assets/*.js worker/src/*.js worker/test/*.js",
+    "lint:css": "stylelint 'plugin/assets/*.css'",
+    "test:worker": "npm --prefix worker test",
+    "test:wp": "wp-env run cli wp plugin activate telegram-stickers && wp-env run cli --env-cwd=wp-content/plugins/telegram-stickers wp eval-file tests/smoke.php",
+    "package": "python3 tools/package.py"
+  },
+  "devDependencies": {
+    "@wordpress/env": "11.17.0",
+    "@wordpress/eslint-plugin": "27.1.0",
+    "@wordpress/stylelint-config": "26.1.0",
+    "eslint": "10.13.0",
+    "globals": "16.5.0",
+    "stylelint": "17.16.0",
+    "stylelint-scss": "7.2.0"
+  }
+}

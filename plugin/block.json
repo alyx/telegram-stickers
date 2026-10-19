@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "telegram-stickers/sticker",
+  "title": "Telegram Sticker",
+  "category": "media",
+  "icon": "format-image",
+  "description": "Choose an imported Telegram sticker.",
+  "textdomain": "telegram-stickers",
+  "attributes": {
+    "packId": { "type": "number", "default": 0 },
+    "attachmentId": { "type": "number", "default": 0 },
+    "size": { "type": "number", "default": 64 },
+    "alt": { "type": "string", "default": "" }
+  },
+  "supports": { "html": false, "anchor": false },
+  "style": "file:./assets/style.css",
+  "editorStyle": "file:./assets/editor.css"
+}

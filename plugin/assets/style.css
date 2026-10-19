@@ -1,0 +1,10 @@
+.wp-block-telegram-stickers-sticker {
+	display: inline-block;
+	line-height: 0;
+	max-width: 100%;
+	vertical-align: middle;
+}
+
+.wp-block-telegram-stickers-sticker img {
+	max-width: 100%;
+}

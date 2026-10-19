@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<ruleset name="Telegram Stickers">
+    <description>WordPress coding and plugin security checks.</description>
+    <file>plugin</file>
+    <arg name="extensions" value="php" />
+    <arg value="ps" />
+    <rule ref="WordPress-Extra" />
+</ruleset>
