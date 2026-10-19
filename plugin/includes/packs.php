@@ -9,7 +9,7 @@ function tsp_rest_routes(): void {
 		array(
 			'methods'             => WP_REST_Server::READABLE,
 			'callback'            => 'tsp_rest_packs',
-			'permission_callback' => 'tsp_can_import',
+			'permission_callback' => 'tsp_can_use_packs',
 		)
 	);
 	register_rest_route(
@@ -18,7 +18,7 @@ function tsp_rest_routes(): void {
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => 'tsp_rest_import_start',
-			'permission_callback' => 'tsp_can_import',
+			'permission_callback' => 'tsp_can_use_packs',
 			'args'                => array(
 				'pack' => array(
 					'required' => true,
@@ -33,7 +33,7 @@ function tsp_rest_routes(): void {
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => 'tsp_rest_import_step',
-			'permission_callback' => 'tsp_can_import',
+			'permission_callback' => 'tsp_can_use_packs',
 			'args'                => array(
 				'packId' => array(
 					'required' => true,
@@ -42,9 +42,27 @@ function tsp_rest_routes(): void {
 			),
 		)
 	);
+	register_rest_route(
+		'telegram-stickers/v1',
+		'/manual',
+		array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => 'tsp_rest_manual_save',
+			'permission_callback' => 'tsp_can_use_packs',
+		)
+	);
+	register_rest_route(
+		'telegram-stickers/v1',
+		'/manual/(?P<id>\d+)',
+		array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => 'tsp_rest_manual_save',
+			'permission_callback' => 'tsp_can_use_packs',
+		)
+	);
 }
 
-function tsp_can_import(): bool {
+function tsp_can_use_packs(): bool {
 	return current_user_can( 'upload_files' );
 }
 
@@ -66,25 +84,51 @@ function tsp_pack_payload( WP_Post $pack ): array {
 	$items    = is_array( $items ) ? $items : array();
 	$stickers = array();
 	foreach ( $items as $item ) {
-		$id = isset( $item['attachment_id'] ) ? (int) $item['attachment_id'] : 0;
-		if ( ! $id || 'attachment' !== get_post_type( $id ) ) {
-			continue;
+		$sticker = tsp_sticker_payload( $item );
+		if ( $sticker ) {
+			$stickers[] = $sticker;
 		}
-		$picker_url = wp_get_attachment_image_url( $id, 'tsp_picker' );
-		$stickers[] = array(
-			'id'           => (string) $item['id'],
-			'attachmentId' => $id,
-			'emoji'        => (string) ( $item['emoji'] ?? '' ),
-			'url'          => $picker_url ? $picker_url : wp_get_attachment_url( $id ),
-		);
 	}
+	$retired  = get_post_meta( $pack->ID, '_tsp_retired_items', true );
+	$retired  = is_array( $retired ) ? $retired : array();
+	$archived = array();
+	foreach ( $retired as $item ) {
+		$sticker = tsp_sticker_payload( $item );
+		if ( $sticker ) {
+			$archived[] = $sticker;
+		}
+	}
+	$source = 'manual' === get_post_meta( $pack->ID, '_tsp_source', true ) ? 'manual' : 'telegram';
 	return array(
-		'id'       => $pack->ID,
-		'name'     => (string) get_post_meta( $pack->ID, '_tsp_name', true ),
-		'title'    => get_the_title( $pack ),
-		'status'   => (string) get_post_meta( $pack->ID, '_tsp_status', true ),
-		'stickers' => $stickers,
+		'id'               => $pack->ID,
+		'name'             => (string) get_post_meta( $pack->ID, '_tsp_name', true ),
+		'title'            => get_the_title( $pack ),
+		'source'           => $source,
+		'canEdit'          => 'manual' === $source && tsp_can_edit_manual_pack( $pack ),
+		'status'           => (string) get_post_meta( $pack->ID, '_tsp_status', true ),
+		'stickers'         => $stickers,
+		'archivedStickers' => $archived,
 	);
+}
+
+function tsp_sticker_payload( array $item ): ?array {
+	$id = isset( $item['attachment_id'] ) ? (int) $item['attachment_id'] : 0;
+	if ( ! $id || 'attachment' !== get_post_type( $id ) ) {
+		return null;
+	}
+	$picker_url = wp_get_attachment_image_url( $id, 'tsp_picker' );
+	return array(
+		'id'           => (string) ( $item['id'] ?? $id ),
+		'attachmentId' => $id,
+		'emoji'        => (string) ( $item['emoji'] ?? '' ),
+		'alt'          => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
+		'url'          => $picker_url ? $picker_url : wp_get_attachment_url( $id ),
+	);
+}
+
+/** Manual packs are shared for use, but only their creator or an administrator can change them. */
+function tsp_can_edit_manual_pack( WP_Post $pack ): bool {
+	return current_user_can( 'upload_files' ) && ( current_user_can( 'manage_options' ) || get_current_user_id() === (int) $pack->post_author );
 }
 
 function tsp_pack_name( string $input ) {

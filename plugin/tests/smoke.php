@@ -12,12 +12,16 @@ function tsp_smoke_assert( bool $condition, string $message ): void {
 	}
 }
 
-$original_user = get_current_user_id();
-$old_settings  = get_option( TSP_SETTINGS, null );
-$name          = 'TspSmoke' . wp_generate_password( 8, false, false );
-$pack_id       = 0;
-$image         = base64_decode( 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9hFpV24AAAAASUVORK5CYII=', true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- A 1x1 PNG test fixture.
-$mock          = static function ( $preempt, $arguments, $url ) use ( $name, $image ) {
+$original_user  = get_current_user_id();
+$old_settings   = get_option( TSP_SETTINGS, null );
+$name           = 'TspSmoke' . wp_generate_password( 8, false, false );
+$pack_id        = 0;
+$manual_pack_id = 0;
+$author_ids     = array();
+$manual_ids     = array();
+$invalid_id     = 0;
+$image          = base64_decode( 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9hFpV24AAAAASUVORK5CYII=', true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- A 1x1 PNG test fixture.
+$mock           = static function ( $preempt, $arguments, $url ) use ( $name, $image ) {
 	if ( 'https://stickers.example.invalid/v1/packs/' . $name === $url ) {
 		$body = wp_json_encode(
 			array(
@@ -131,9 +135,117 @@ try {
 		),
 		'Block rendered unrelated media.'
 	);
+
+	foreach ( array( 'owner', 'other' ) as $label ) {
+		$user_id = wp_create_user( 'tsp-smoke-' . $label . '-' . strtolower( $name ), wp_generate_password( 24 ), 'tsp-smoke-' . $label . '-' . strtolower( $name ) . '@example.invalid' );
+		tsp_smoke_assert( ! is_wp_error( $user_id ), 'Could not create smoke test author.' );
+		( new WP_User( $user_id ) )->set_role( 'author' );
+		$author_ids[] = $user_id;
+	}
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	foreach ( array( 'one', 'two' ) as $label ) {
+		$upload = wp_upload_bits( 'tsp-smoke-' . $label . '.png', null, $image );
+		tsp_smoke_assert( empty( $upload['error'] ), 'Could not upload smoke test image.' );
+		$attachment_id = wp_insert_attachment(
+			array(
+				'post_mime_type' => 'image/png',
+				'post_title'     => 'TSP smoke ' . $label,
+				'post_status'    => 'inherit',
+				'post_author'    => $author_ids[0],
+			),
+			$upload['file'],
+			0,
+			true
+		);
+		tsp_smoke_assert( ! is_wp_error( $attachment_id ), 'Could not create smoke test attachment.' );
+		$manual_ids[] = $attachment_id;
+		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $upload['file'] ) );
+	}
+	wp_set_current_user( $author_ids[0] );
+	$invalid_id = wp_insert_attachment(
+		array(
+			'post_mime_type' => 'text/plain',
+			'post_title'     => 'Not a sticker image',
+			'post_status'    => 'inherit',
+			'post_author'    => $author_ids[0],
+		),
+		false,
+		0,
+		true
+	);
+	tsp_smoke_assert( ! is_wp_error( $invalid_id ), 'Could not create invalid media fixture.' );
+	$bad_media = new WP_REST_Request( 'POST', '/telegram-stickers/v1/manual' );
+	$bad_media->set_param( 'title', 'Bad media' );
+	$bad_media->set_param( 'attachmentIds', array( $invalid_id ) );
+	tsp_smoke_assert( rest_do_request( $bad_media )->is_error(), 'Non-image media was accepted.' );
+	$bad_media->set_param( 'attachmentIds', array() );
+	tsp_smoke_assert( rest_do_request( $bad_media )->is_error(), 'Empty manual pack was accepted.' );
+	$create = new WP_REST_Request( 'POST', '/telegram-stickers/v1/manual' );
+	$create->set_param( 'title', 'My test stickers' );
+	$create->set_param( 'attachmentIds', $manual_ids );
+	$created = rest_do_request( $create );
+	tsp_smoke_assert( ! $created->is_error(), 'Author could not create a manual pack.' );
+	$manual_pack_id = (int) $created->get_data()['id'];
+	tsp_smoke_assert( 'manual' === $created->get_data()['source'] && 2 === count( $created->get_data()['stickers'] ) && $created->get_data()['canEdit'], 'Manual pack payload is wrong.' );
+
+	$duplicate = new WP_REST_Request( 'POST', '/telegram-stickers/v1/manual/' . $manual_pack_id );
+	$duplicate->set_param( 'title', 'My test stickers' );
+	$duplicate->set_param( 'attachmentIds', array( $manual_ids[0], $manual_ids[0] ) );
+	tsp_smoke_assert( rest_do_request( $duplicate )->is_error(), 'Duplicate image IDs were accepted.' );
+
+	wp_set_current_user( $author_ids[1] );
+	$shared      = rest_do_request( new WP_REST_Request( 'GET', '/telegram-stickers/v1/packs' ) );
+	$shared_pack = array_values( array_filter( $shared->get_data(), static fn( $item ) => $manual_pack_id === $item['id'] ) );
+	tsp_smoke_assert( 1 === count( $shared_pack ) && ! $shared_pack[0]['canEdit'], 'Another author could not use the shared pack safely.' );
+	$forbidden = new WP_REST_Request( 'POST', '/telegram-stickers/v1/manual/' . $manual_pack_id );
+	$forbidden->set_param( 'title', 'Hijacked' );
+	$forbidden->set_param( 'attachmentIds', $manual_ids );
+	$denied = rest_do_request( $forbidden );
+	tsp_smoke_assert( $denied->is_error() && 403 === $denied->get_status(), 'Another author could edit a manual pack.' );
+	$foreign = new WP_REST_Request( 'POST', '/telegram-stickers/v1/manual' );
+	$foreign->set_param( 'title', 'Foreign images' );
+	$foreign->set_param( 'attachmentIds', $manual_ids );
+	$denied = rest_do_request( $foreign );
+	tsp_smoke_assert( $denied->is_error() && 403 === $denied->get_status(), 'Another author could add someone else’s media.' );
+
+	wp_set_current_user( (int) $admins[0] );
+	$update = new WP_REST_Request( 'POST', '/telegram-stickers/v1/manual/' . $manual_pack_id );
+	$update->set_param( 'title', 'Reordered test stickers' );
+	$update->set_param( 'attachmentIds', array_reverse( $manual_ids ) );
+	$updated = rest_do_request( $update );
+	tsp_smoke_assert( ! $updated->is_error() && $manual_ids[1] === $updated->get_data()['stickers'][0]['attachmentId'], 'Administrator could not reorder the manual pack.' );
+	$update->set_param( 'attachmentIds', array( $manual_ids[1] ) );
+	$updated = rest_do_request( $update );
+	tsp_smoke_assert( ! $updated->is_error() && 1 === count( $updated->get_data()['stickers'] ) && 1 === count( $updated->get_data()['archivedStickers'] ), 'Removing a sticker did not archive its reference.' );
+	$kept_html = tsp_render_sticker(
+		array(
+			'packId'       => $manual_pack_id,
+			'attachmentId' => $manual_ids[0],
+			'alt'          => 'Still here',
+		)
+	);
+	tsp_smoke_assert( str_contains( $kept_html, 'Still here' ), 'Removing an image from a pack broke an existing post.' );
+	tsp_smoke_assert( 'attachment' === get_post_type( $manual_ids[0] ), 'Removing an image deleted Media Library content.' );
+	$imported_edit = new WP_REST_Request( 'POST', '/telegram-stickers/v1/manual/' . $pack_id );
+	$imported_edit->set_param( 'title', 'Wrong source' );
+	$imported_edit->set_param( 'attachmentIds', $manual_ids );
+	tsp_smoke_assert( rest_do_request( $imported_edit )->is_error(), 'Manual endpoint edited a Telegram pack.' );
 	echo "Telegram Stickers WordPress smoke test passed.\n";
 } finally {
 	remove_filter( 'pre_http_request', $mock, 10 );
+	if ( $manual_pack_id ) {
+		wp_delete_post( $manual_pack_id, true );
+	}
+	foreach ( $manual_ids as $attachment_id ) {
+		wp_delete_attachment( $attachment_id, true );
+	}
+	if ( $invalid_id ) {
+		wp_delete_attachment( $invalid_id, true );
+	}
+	foreach ( $author_ids as $author_id ) {
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+		wp_delete_user( $author_id );
+	}
 	if ( $pack_id ) {
 		foreach ( (array) get_post_meta( $pack_id, '_tsp_items', true ) as $item ) {
 			wp_delete_attachment( (int) ( $item['attachment_id'] ?? 0 ), true );

@@ -1,9 +1,9 @@
 # Telegram Stickers for WordPress
 
-A standalone WordPress plugin and optional Cloudflare Worker for importing static
-Telegram sticker packs. The plugin saves images to the local Media Library, then
-provides a block for choosing one sticker in a post. Animated TGS and video WEBM
-stickers are skipped in this MVP.
+A standalone WordPress plugin for making sticker packs from Media Library images
+or importing static Telegram sticker packs. The optional Cloudflare Worker serves
+Telegram imports. The block chooses one sticker per post. Animated TGS and video
+WEBM stickers are skipped in this MVP.
 
 TStickers is a Python downloader and format converter. Its useful pattern here is
 looking up a set with the Telegram Bot API, then fetching each sticker file. For
@@ -24,9 +24,15 @@ An administrator opens **Media → Sticker Packs → Connection settings** and c
 - **My Telegram bot token:** enter a token obtained from BotFather. The token stays
   in a non-autoloaded WordPress option and is never passed to editor JavaScript.
 
-Anyone with `upload_files` can open **Media → Sticker Packs** and import a public
-`https://t.me/addstickers/<name>` pack. Imports run in batches of four and can be
-retried; existing stickers are reused. The **Telegram Sticker** block presents a
+Anyone with `upload_files` can open **Media → Sticker Packs** and create a pack
+from PNG, WebP, or JPEG images already in the Media Library or upload new ones.
+Images can be reordered or removed. Manual packs are shared for use; the creator
+or an administrator can edit them. Removing an image from a pack leaves the Media
+Library file and existing post render intact. Manual packs need no Telegram service.
+
+The same page imports public `https://t.me/addstickers/<name>` packs. Imports run
+in batches of four and can be retried; existing stickers are reused. The
+**Sticker** block presents a
 pack selector, a keyboard-accessible sticker grid, a filter, a live preview,
 display size, and alternative text. Published markup uses local attachments.
 
@@ -74,8 +80,9 @@ npm run test:worker
 ```
 
 The WordPress smoke test uses a fake provider, so it needs no Telegram token.
-It checks permissions, pack validation, import, attachment reuse on retry, and
-block rendering in a real WordPress instance. To run it in an isolated Docker
+It checks permissions, manual pack creation and editing, pack validation, import,
+attachment reuse on retry, and block rendering in a real WordPress instance.
+To run it in an isolated Docker
 site:
 
 ```sh

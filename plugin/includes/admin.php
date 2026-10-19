@@ -28,12 +28,12 @@ function tsp_admin_page(): void {
 	?>
 	<div class="wrap tsp-admin">
 		<h1><?php esc_html_e( 'Sticker Packs', 'telegram-stickers' ); ?></h1>
-		<p><?php esc_html_e( 'Import a public Telegram sticker pack, then pick individual stickers in the editor.', 'telegram-stickers' ); ?></p>
+		<p><?php esc_html_e( 'Make a pack from your own images or import one from Telegram. Pick individual stickers in the editor.', 'telegram-stickers' ); ?></p>
 		<?php if ( isset( $_GET['settings_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'telegram-stickers' ); ?></p></div>
 		<?php endif; ?>
 		<?php if ( current_user_can( 'manage_options' ) ) : ?>
-			<details class="tsp-settings" <?php echo empty( $settings['service_url'] ) && 'hosted' === $settings['mode'] ? 'open' : ''; ?>>
+			<details class="tsp-settings">
 				<summary><?php esc_html_e( 'Connection settings', 'telegram-stickers' ); ?></summary>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<?php wp_nonce_field( 'tsp_save_settings' ); ?>
@@ -55,8 +55,23 @@ function tsp_admin_page(): void {
 		<?php else : ?>
 			<p class="description"><?php echo 'byo' === $settings['mode'] ? esc_html__( 'The site uses its own Telegram bot.', 'telegram-stickers' ) : esc_html__( 'The site uses a hosted sticker service.', 'telegram-stickers' ); ?></p>
 		<?php endif; ?>
+		<div class="tsp-manual-box">
+			<h2 id="tsp-manual-heading"><?php esc_html_e( 'Create a pack', 'telegram-stickers' ); ?></h2>
+			<p><?php esc_html_e( 'Choose PNG, WebP, or JPEG images from the Media Library, or upload new ones. A Telegram connection is not needed.', 'telegram-stickers' ); ?></p>
+			<label for="tsp-manual-title"><strong><?php esc_html_e( 'Pack name', 'telegram-stickers' ); ?></strong></label><br>
+			<input id="tsp-manual-title" class="regular-text" type="text" maxlength="200" autocomplete="off">
+			<div class="tsp-manual-actions">
+				<button id="tsp-manual-add" class="button button-secondary" type="button"><?php esc_html_e( 'Add images', 'telegram-stickers' ); ?></button>
+				<button id="tsp-manual-save" class="button button-primary" type="button"><?php esc_html_e( 'Create pack', 'telegram-stickers' ); ?></button>
+				<button id="tsp-manual-cancel" class="button" type="button" hidden><?php esc_html_e( 'Cancel editing', 'telegram-stickers' ); ?></button>
+			</div>
+			<ol id="tsp-manual-images" class="tsp-manual-images" aria-label="<?php esc_attr_e( 'Images in this pack, in order', 'telegram-stickers' ); ?>"></ol>
+			<p id="tsp-manual-hint" class="description"><?php esc_html_e( 'Add at least one image. Use the arrow buttons to change the order. Removing an image from a pack does not delete it from the Media Library or existing posts.', 'telegram-stickers' ); ?></p>
+			<div id="tsp-manual-status" role="status" aria-live="polite"></div>
+		</div>
 		<div class="tsp-import-box">
 			<h2><?php esc_html_e( 'Import a pack', 'telegram-stickers' ); ?></h2>
+			<p><?php esc_html_e( 'Import a public Telegram pack using the connection configured above.', 'telegram-stickers' ); ?></p>
 			<label for="tsp-pack-url"><?php esc_html_e( 'Telegram pack link or name', 'telegram-stickers' ); ?></label>
 			<div class="tsp-import-row">
 				<input id="tsp-pack-url" class="regular-text" type="text" placeholder="https://t.me/addstickers/alyxbutmore" autocomplete="off">
@@ -65,7 +80,7 @@ function tsp_admin_page(): void {
 			<div id="tsp-import-status" role="status" aria-live="polite"></div>
 			<progress id="tsp-import-progress" max="1" value="0" hidden></progress>
 		</div>
-		<h2><?php esc_html_e( 'Imported packs', 'telegram-stickers' ); ?></h2>
+		<h2><?php esc_html_e( 'Sticker packs', 'telegram-stickers' ); ?></h2>
 		<div id="tsp-pack-list"><p><?php esc_html_e( 'Loading packs…', 'telegram-stickers' ); ?></p></div>
 	</div>
 	<?php
@@ -114,6 +129,7 @@ function tsp_admin_assets( string $hook ): void {
 		return;
 	}
 	wp_enqueue_style( 'tsp-admin', plugins_url( 'assets/admin.css', TSP_PLUGIN_FILE ), array(), TSP_VERSION );
+	wp_enqueue_media();
 	wp_enqueue_script( 'tsp-admin', plugins_url( 'assets/admin.js', TSP_PLUGIN_FILE ), array( 'wp-i18n' ), TSP_VERSION, true );
 	wp_set_script_translations( 'tsp-admin', 'telegram-stickers' );
 	wp_add_inline_script(

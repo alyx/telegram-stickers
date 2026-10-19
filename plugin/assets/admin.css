@@ -3,6 +3,7 @@
 }
 
 .tsp-settings,
+.tsp-manual-box,
 .tsp-import-box {
 	background: #fff;
 	border: 1px solid #c3c4c7;
@@ -21,8 +22,50 @@
 	padding-top: 8px;
 }
 
-.tsp-import-box h2 {
+.tsp-import-box h2,
+.tsp-manual-box h2 {
 	margin-top: 0;
+}
+
+.tsp-manual-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.tsp-manual-images {
+	display: grid;
+	gap: 6px;
+	list-style: none;
+	margin: 14px 0;
+	max-width: 620px;
+	padding: 0;
+}
+
+.tsp-manual-image {
+	align-items: center;
+	border: 1px solid #dcdcde;
+	display: flex;
+	gap: 8px;
+	padding: 6px;
+}
+
+.tsp-manual-image img {
+	flex: 0 0 56px;
+	object-fit: contain;
+}
+
+.tsp-manual-image span {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#tsp-manual-status {
+	min-height: 20px;
 }
 
 .tsp-import-row {

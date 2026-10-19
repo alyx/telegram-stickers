@@ -16,8 +16,9 @@
 }
 
 .tsp-editor-caption {
-	color: #555;
+	color: inherit;
 	font-size: 12px;
+	opacity: 0.75;
 }
 
 .tsp-picker-modal {
@@ -32,6 +33,25 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 12px;
+}
+
+.tsp-chooser-links {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	grid-column: 1 / -1;
+	margin-bottom: 12px;
+}
+
+.tsp-empty {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.tsp-empty p {
+	flex-basis: 100%;
+	margin: 0;
 }
 
 .tsp-sticker-grid {

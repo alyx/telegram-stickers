@@ -18,23 +18,36 @@
 		const [ filter, setFilter ] = useState( '' );
 		const [ pickerPackId, setPickerPackId ] = useState( attributes.packId || 0 );
 
-		useEffect( function() {
-			let active = true;
+		function loadPacks( isActive ) {
+			setLoading( true );
+			setError( '' );
 			wp.apiFetch( { path: '/telegram-stickers/v1/packs' } ).then( function( result ) {
-				if ( ! active ) {
+				if ( isActive && ! isActive() ) {
 					return;
 				}
 				setPacks( result );
-				if ( ! pickerPackId && result.length ) {
-					setPickerPackId( result[ 0 ].id );
-				}
+				setPickerPackId( function( current ) {
+					if ( current && result.some( function( pack ) {
+						return pack.id === current;
+					} ) ) {
+						return current;
+					}
+					return result.length ? result[ 0 ].id : 0;
+				} );
 				setLoading( false );
 			} ).catch( function( failure ) {
-				if ( ! active ) {
+				if ( isActive && ! isActive() ) {
 					return;
 				}
 				setError( failure.message || __( 'Could not load sticker packs.', 'telegram-stickers' ) );
 				setLoading( false );
+			} );
+		}
+
+		useEffect( function() {
+			let active = true;
+			loadPacks( function() {
+				return active;
 			} );
 			return function() {
 				active = false;
@@ -44,16 +57,19 @@
 		const selectedPack = packs.find( function( pack ) {
 			return pack.id === attributes.packId;
 		} );
-		const sticker = selectedPack && selectedPack.stickers.find( function( item ) {
+		const activeSticker = selectedPack && selectedPack.stickers.find( function( item ) {
 			return item.attachmentId === attributes.attachmentId;
 		} );
+		const sticker = activeSticker || ( selectedPack && selectedPack.archivedStickers.find( function( item ) {
+			return item.attachmentId === attributes.attachmentId;
+		} ) );
 		const pickerPack = packs.find( function( pack ) {
 			return pack.id === pickerPackId;
 		} ) || packs[ 0 ];
 		const blockProps = useBlockProps( { className: 'tsp-editor-block' } );
 
 		function choose( pack, item ) {
-			setAttributes( { packId: pack.id, attachmentId: item.attachmentId, alt: item.emoji || '' } );
+			setAttributes( { packId: pack.id, attachmentId: item.attachmentId, alt: item.emoji || item.alt || '' } );
 			setOpen( false );
 			setFilter( '' );
 		}
@@ -67,11 +83,14 @@
 			}
 			if ( ! packs.length ) {
 				return h( 'div', { className: 'tsp-empty' },
-					h( 'p', null, __( 'There are no imported sticker packs yet.', 'telegram-stickers' ) ),
-					h( 'a', { href: window.tspEditor.importUrl }, __( 'Import a sticker pack', 'telegram-stickers' ) ) );
+					h( 'p', null, __( 'There are no sticker packs yet.', 'telegram-stickers' ) ),
+					h( 'a', { href: window.tspEditor.importUrl, target: '_blank', rel: 'noopener noreferrer' }, __( 'Create or import a pack', 'telegram-stickers' ) ),
+					h( Button, { variant: 'secondary', onClick() {
+						loadPacks();
+					} }, __( 'Refresh packs', 'telegram-stickers' ) ) );
 			}
 			const visible = pickerPack ? pickerPack.stickers.filter( function( item, index ) {
-				return ! filter || ( item.emoji + ' ' + ( index + 1 ) ).toLowerCase().includes( filter.toLowerCase() );
+				return ! filter || ( item.emoji + ' ' + item.alt + ' ' + ( index + 1 ) ).toLowerCase().includes( filter.toLowerCase() );
 			} ) : [];
 			return h( 'div', { className: 'tsp-chooser' },
 				h( 'div', { className: 'tsp-chooser-controls' },
@@ -87,7 +106,12 @@
 							setFilter( '' );
 						},
 					} ),
-					h( TextControl, { label: __( 'Filter by emoji or number', 'telegram-stickers' ), value: filter, onChange: setFilter, placeholder: __( 'Search this pack', 'telegram-stickers' ) } ),
+					h( TextControl, { label: __( 'Filter by name, emoji, or number', 'telegram-stickers' ), value: filter, onChange: setFilter, placeholder: __( 'Search this pack', 'telegram-stickers' ) } ),
+					h( 'div', { className: 'tsp-chooser-links' },
+						h( Button, { variant: 'secondary', onClick() {
+							loadPacks();
+						} }, __( 'Refresh packs', 'telegram-stickers' ) ),
+						h( 'a', { href: window.tspEditor.importUrl, target: '_blank', rel: 'noopener noreferrer' }, __( 'Manage packs', 'telegram-stickers' ) ) ),
 				),
 				visible.length ? h( 'div', { className: 'tsp-sticker-grid', role: 'group', 'aria-label': sprintf( __( 'Stickers in %s', 'telegram-stickers' ), pickerPack.title ) },
 					visible.map( function( item ) {
@@ -96,13 +120,13 @@
 							type: 'button',
 							key: item.id,
 							className: 'tsp-sticker-choice' + ( item.attachmentId === attributes.attachmentId ? ' is-selected' : '' ),
-							'aria-label': sprintf( __( 'Choose sticker %d', 'telegram-stickers' ), number ) + ( item.emoji ? ', ' + item.emoji : '' ),
+							'aria-label': sprintf( __( 'Choose sticker %d', 'telegram-stickers' ), number ) + ( item.emoji || item.alt ? ', ' + ( item.emoji || item.alt ) : '' ),
 							onClick() {
 								choose( pickerPack, item );
 							},
-						}, h( 'img', { src: item.url, alt: '', loading: 'lazy' } ), h( 'span', { 'aria-hidden': 'true' }, item.emoji || '#' + number ) );
+						}, h( 'img', { src: item.url, alt: '', loading: 'lazy' } ), h( 'span', { 'aria-hidden': 'true' }, item.emoji || item.alt || '#' + number ) );
 					} ),
-				) : h( 'p', null, __( 'No stickers match that filter.', 'telegram-stickers' ) ),
+				) : h( 'p', null, pickerPack.stickers.length ? __( 'No stickers match that filter.', 'telegram-stickers' ) : __( 'This pack has no stickers. Add images on the Sticker Packs page, then refresh.', 'telegram-stickers' ) ),
 			);
 		}
 
@@ -131,14 +155,14 @@
 			h( 'div', blockProps,
 				sticker ? h( 'div', { className: 'tsp-editor-preview' },
 					h( 'img', { src: sticker.url, alt: attributes.alt || '', style: { width: attributes.size + 'px', height: attributes.size + 'px', objectFit: 'contain' } } ),
-					h( 'div', { className: 'tsp-editor-caption' }, selectedPack.title, ' · ', sticker.emoji || __( 'Sticker', 'telegram-stickers' ) ),
+					h( 'div', { className: 'tsp-editor-caption' }, selectedPack.title, ' · ', activeSticker ? ( sticker.emoji || sticker.alt || __( 'Sticker', 'telegram-stickers' ) ) : __( 'Removed from pack; still shown in this post', 'telegram-stickers' ) ),
 					h( Button, { variant: 'tertiary', onClick() {
 						setPickerPackId( attributes.packId );
 						setOpen( true );
 					} }, __( 'Choose a different sticker', 'telegram-stickers' ) ),
-				) : h( Placeholder, { icon: 'format-image', label: __( 'Telegram Sticker', 'telegram-stickers' ), instructions: __( 'Choose a pack, then select a sticker.', 'telegram-stickers' ) }, chooser() ),
+				) : h( Placeholder, { icon: 'format-image', label: __( 'Sticker', 'telegram-stickers' ), instructions: __( 'Choose a pack, then select a sticker.', 'telegram-stickers' ) }, chooser() ),
 			),
-			open && h( Modal, { title: __( 'Choose a Telegram sticker', 'telegram-stickers' ), className: 'tsp-picker-modal', onRequestClose() {
+			open && h( Modal, { title: __( 'Choose a sticker', 'telegram-stickers' ), className: 'tsp-picker-modal', onRequestClose() {
 				setOpen( false );
 			} }, chooser() ),
 		);

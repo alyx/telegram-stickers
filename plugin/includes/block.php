@@ -8,8 +8,11 @@ function tsp_render_sticker( array $attributes ): string {
 	if ( ! $pack_id || ! $id || 'tsp_pack' !== get_post_type( $pack_id ) ) {
 		return '';
 	}
-	$items = get_post_meta( $pack_id, '_tsp_items', true );
-	if ( ! is_array( $items ) || ! in_array( $id, array_map( fn( $item ) => (int) ( $item['attachment_id'] ?? 0 ), $items ), true ) ) {
+	$items   = get_post_meta( $pack_id, '_tsp_items', true );
+	$items   = is_array( $items ) ? $items : array();
+	$retired = get_post_meta( $pack_id, '_tsp_retired_items', true );
+	$retired = is_array( $retired ) ? $retired : array();
+	if ( ! in_array( $id, array_map( fn( $item ) => (int) ( $item['attachment_id'] ?? 0 ), array_merge( $items, $retired ) ), true ) ) {
 		return '';
 	}
 	$size  = max( 24, min( 256, (int) ( $attributes['size'] ?? 64 ) ) );
