@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the installable plugin ZIP from an explicit source allowlist."""
 
+import argparse
 from pathlib import Path
 import re
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -13,6 +14,11 @@ if not match:
     raise SystemExit("Plugin version header is missing")
 
 version = match.group(1)
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--release-tag", help="Require this tag to match the plugin version")
+args = parser.parse_args()
+if args.release_tag and args.release_tag != f"v{version}":
+    raise SystemExit(f"Release tag {args.release_tag!r} does not match plugin version v{version}")
 if not re.search(rf"^const TSP_VERSION\s*=\s*'{re.escape(version)}';$", HEADER, re.MULTILINE):
     raise SystemExit("Plugin asset version does not match its header")
 if f"Stable tag: {version}" not in (PLUGIN / "readme.txt").read_text():

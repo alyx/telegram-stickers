@@ -108,6 +108,14 @@ tests, dependencies, and local secrets. When releasing, update the plugin
 header, `TSP_VERSION`, and `plugin/readme.txt` stable tag together; packaging
 checks that they agree.
 
+Push a tag matching that version (for example, `v0.3.0`) to publish a GitHub
+Release. `.github/workflows/release.yml` runs the full CI workflow, builds the
+installable ZIP, verifies it, and attaches the ZIP and `SHA256SUMS` with
+generated release notes. A mismatched tag fails before publication. The ZIP
+has `telegram-stickers/` as its root directory and can be installed through
+**Plugins → Add New → Upload Plugin**. GitHub's automatically generated source
+archives are repository snapshots; use the attached plugin ZIP for WordPress.
+
 `.github/workflows/ci.yml` runs PHP coding standards and syntax checks across
 supported PHP versions, WordPress JavaScript and CSS linters, Worker tests, the
 WordPress smoke test, and the official WordPress Plugin Check action against

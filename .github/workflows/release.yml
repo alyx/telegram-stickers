@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Package and publish
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build installable plugin ZIP
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 tools/package.py --release-tag "$RELEASE_TAG"
+      - name: Verify archive and create checksum
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          archive="dist/telegram-stickers-${RELEASE_TAG#v}.zip"
+          unzip -t "$archive"
+          cd dist
+          sha256sum "${archive##*/}" > SHA256SUMS
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          archive="dist/telegram-stickers-${RELEASE_TAG#v}.zip"
+          gh release create "$RELEASE_TAG" "$archive" dist/SHA256SUMS \
+            --verify-tag --generate-notes --title "$RELEASE_TAG"
