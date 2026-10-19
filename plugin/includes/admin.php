@@ -28,7 +28,7 @@ function tsp_admin_page(): void {
 	?>
 	<div class="wrap tsp-admin">
 		<h1><?php esc_html_e( 'Sticker Packs', 'telegram-stickers' ); ?></h1>
-		<p><?php esc_html_e( 'Make a pack from your own images or import one from Telegram. Pick individual stickers in the editor.', 'telegram-stickers' ); ?></p>
+		<p><?php esc_html_e( 'Make a pack from your own images or import one from Telegram or Signal. Pick individual stickers in the editor.', 'telegram-stickers' ); ?></p>
 		<?php if ( isset( $_GET['settings_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'telegram-stickers' ); ?></p></div>
 		<?php endif; ?>
@@ -70,7 +70,7 @@ function tsp_admin_page(): void {
 			<div id="tsp-manual-status" role="status" aria-live="polite"></div>
 		</div>
 		<div class="tsp-import-box">
-			<h2><?php esc_html_e( 'Import a pack', 'telegram-stickers' ); ?></h2>
+			<h2><?php esc_html_e( 'Import from Telegram', 'telegram-stickers' ); ?></h2>
 			<p><?php esc_html_e( 'Import a public Telegram pack using the connection configured above.', 'telegram-stickers' ); ?></p>
 			<label for="tsp-pack-url"><?php esc_html_e( 'Telegram pack link or name', 'telegram-stickers' ); ?></label>
 			<div class="tsp-import-row">
@@ -79,6 +79,18 @@ function tsp_admin_page(): void {
 			</div>
 			<div id="tsp-import-status" role="status" aria-live="polite"></div>
 			<progress id="tsp-import-progress" max="1" value="0" hidden></progress>
+		</div>
+		<div class="tsp-import-box">
+			<h2><?php esc_html_e( 'Import from Signal', 'telegram-stickers' ); ?></h2>
+			<p><?php esc_html_e( 'Paste a Signal sticker pack link. The pack is downloaded directly from Signal; no bot or hosted service is needed.', 'telegram-stickers' ); ?></p>
+			<label for="tsp-signal-url"><?php esc_html_e( 'Signal pack link', 'telegram-stickers' ); ?></label>
+			<div class="tsp-import-row">
+				<input id="tsp-signal-url" class="regular-text" type="text" placeholder="https://signal.art/addstickers/#pack_id=…&amp;pack_key=…" autocomplete="off" spellcheck="false">
+				<button id="tsp-signal-button" class="button button-primary" type="button"><?php esc_html_e( 'Import Signal pack', 'telegram-stickers' ); ?></button>
+			</div>
+			<p class="description"><?php esc_html_e( 'The link contains a decryption key. It is saved privately on this site for refreshing the pack and is never included in the editor.', 'telegram-stickers' ); ?></p>
+			<div id="tsp-signal-status" role="status" aria-live="polite"></div>
+			<progress id="tsp-signal-progress" max="1" value="0" hidden></progress>
 		</div>
 		<h2><?php esc_html_e( 'Sticker packs', 'telegram-stickers' ); ?></h2>
 		<div id="tsp-pack-list"><p><?php esc_html_e( 'Loading packs…', 'telegram-stickers' ); ?></p></div>

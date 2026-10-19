@@ -50,6 +50,7 @@ function tsp_rest_import_start( WP_REST_Request $request ) {
 		)
 	);
 	update_post_meta( $pack_id, '_tsp_name', $name );
+	update_post_meta( $pack_id, '_tsp_source', 'telegram' );
 	update_post_meta( $pack_id, '_tsp_manifest', $static );
 	update_post_meta( $pack_id, '_tsp_cursor', 0 );
 	update_post_meta( $pack_id, '_tsp_status', 'importing' );
@@ -161,6 +162,12 @@ function tsp_rest_import_step( WP_REST_Request $request ) {
 	$pack_id = (int) $request->get_param( 'packId' );
 	if ( 'tsp_pack' !== get_post_type( $pack_id ) ) {
 		return new WP_Error( 'tsp_pack', __( 'Pack not found.', 'telegram-stickers' ), array( 'status' => 404 ) );
+	}
+	if ( 'signal' === get_post_meta( $pack_id, '_tsp_source', true ) ) {
+		return tsp_signal_import_step( $pack_id );
+	}
+	if ( 'manual' === get_post_meta( $pack_id, '_tsp_source', true ) ) {
+		return new WP_Error( 'tsp_pack', __( 'No import is pending for this pack.', 'telegram-stickers' ), array( 'status' => 400 ) );
 	}
 	$manifest = get_post_meta( $pack_id, '_tsp_manifest', true );
 	if ( ! is_array( $manifest ) ) {

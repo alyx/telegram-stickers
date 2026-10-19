@@ -44,6 +44,36 @@ function tsp_rest_routes(): void {
 	);
 	register_rest_route(
 		'telegram-stickers/v1',
+		'/signal/start',
+		array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => 'tsp_rest_signal_start',
+			'permission_callback' => 'tsp_can_use_packs',
+			'args'                => array(
+				'pack' => array(
+					'required' => true,
+					'type'     => 'string',
+				),
+			),
+		)
+	);
+	register_rest_route(
+		'telegram-stickers/v1',
+		'/signal/refresh',
+		array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => 'tsp_rest_signal_refresh',
+			'permission_callback' => 'tsp_can_use_packs',
+			'args'                => array(
+				'packId' => array(
+					'required' => true,
+					'type'     => 'integer',
+				),
+			),
+		)
+	);
+	register_rest_route(
+		'telegram-stickers/v1',
 		'/manual',
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
@@ -98,7 +128,8 @@ function tsp_pack_payload( WP_Post $pack ): array {
 			$archived[] = $sticker;
 		}
 	}
-	$source = 'manual' === get_post_meta( $pack->ID, '_tsp_source', true ) ? 'manual' : 'telegram';
+	$source = get_post_meta( $pack->ID, '_tsp_source', true );
+	$source = in_array( $source, array( 'manual', 'signal' ), true ) ? $source : 'telegram';
 	return array(
 		'id'               => $pack->ID,
 		'name'             => (string) get_post_meta( $pack->ID, '_tsp_name', true ),

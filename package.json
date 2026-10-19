@@ -5,7 +5,7 @@
     "lint:js": "eslint plugin/assets/*.js worker/src/*.js worker/test/*.js",
     "lint:css": "stylelint 'plugin/assets/*.css'",
     "test:worker": "npm --prefix worker test",
-    "test:wp": "wp-env run cli wp plugin activate telegram-stickers && wp-env run cli --env-cwd=wp-content/plugins/telegram-stickers wp eval-file tests/smoke.php",
+    "test:wp": "wp-env run cli wp plugin activate telegram-stickers && wp-env run cli --env-cwd=wp-content/plugins/telegram-stickers wp eval-file tests/smoke.php && wp-env run cli --env-cwd=wp-content/plugins/telegram-stickers wp eval-file tests/signal-smoke.php",
     "package": "python3 tools/package.py"
   },
   "devDependencies": {

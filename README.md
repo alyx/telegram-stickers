@@ -1,9 +1,10 @@
 # Telegram Stickers for WordPress
 
 A standalone WordPress plugin for making sticker packs from Media Library images
-or importing static Telegram sticker packs. The optional Cloudflare Worker serves
-Telegram imports. The block chooses one sticker per post. Animated TGS and video
-WEBM stickers are skipped in this MVP.
+or importing static Telegram and Signal sticker packs. The optional Cloudflare
+Worker serves Telegram imports; Signal imports fetch directly from Signal's CDN.
+The block chooses one sticker per post. Animated and video stickers are skipped
+in this MVP.
 
 TStickers is a Python downloader and format converter. Its useful pattern here is
 looking up a set with the Telegram Bot API, then fetching each sticker file. For
@@ -32,7 +33,16 @@ Library file and existing post render intact. Manual packs need no Telegram serv
 
 The same page imports public `https://t.me/addstickers/<name>` packs. Imports run
 in batches of four and can be retried; existing stickers are reused. The
-**Sticker** block presents a
+page also imports `https://signal.art/addstickers/#pack_id=…&pack_key=…` links
+without a bot or Worker. Signal's pack key stays in private WordPress post meta
+for refreshes and is not returned to the editor. Signal imports decrypt the
+manifest and sticker files on the site using PHP's OpenSSL and hash extensions.
+Static PNG files are supported too; animated APNG and WebP files are skipped.
+`plugin/certs/signal-ca.pem` is Signal's CA certificate from the
+[signalstickers-client project](https://github.com/signalstickers/signalstickers-client/blob/master/signalstickers_client/utils/ca/cacert.pem).
+The CDN request verifies against it; maintainers should review it before its
+2032 expiration.
+The **Sticker** block presents a
 pack selector, a keyboard-accessible sticker grid, a filter, a live preview,
 display size, and alternative text. Published markup uses local attachments.
 
@@ -64,7 +74,7 @@ endpoint. The local `.dev.vars` is for development only.
 
 `plugin/telegram-stickers.php` registers the block and WordPress hooks. The
 `plugin/includes/` files separate the admin screen, pack REST API, Telegram or
-hosted provider, import, and block rendering. The Worker has no WordPress
+hosted provider, Signal import, and block rendering. The Worker has no WordPress
 dependency. No Composer or Node packages are shipped in the plugin ZIP.
 
 Install the development tools, then run the same checks used by CI:
@@ -79,9 +89,10 @@ npm run lint:css
 npm run test:worker
 ```
 
-The WordPress smoke test uses a fake provider, so it needs no Telegram token.
-It checks permissions, manual pack creation and editing, pack validation, import,
-attachment reuse on retry, and block rendering in a real WordPress instance.
+The WordPress smoke tests use fake providers, so they need no Telegram token or
+Signal network connection. They check permissions, manual pack creation and
+editing, pack validation, import, animated Signal sticker skipping, attachment
+reuse on retry, key privacy, and block rendering in a real WordPress instance.
 To run it in an isolated Docker
 site:
 

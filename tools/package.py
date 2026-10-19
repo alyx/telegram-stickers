@@ -22,6 +22,7 @@ files = [
     PLUGIN / "telegram-stickers.php",
     PLUGIN / "block.json",
     PLUGIN / "readme.txt",
+    PLUGIN / "certs" / "signal-ca.pem",
     *sorted((PLUGIN / "includes").glob("*.php")),
     *sorted((PLUGIN / "assets").glob("*.js")),
     *sorted((PLUGIN / "assets").glob("*.css")),

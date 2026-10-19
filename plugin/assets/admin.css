@@ -79,18 +79,21 @@
 	min-width: min(100%, 420px);
 }
 
-#tsp-import-status {
+#tsp-import-status,
+#tsp-signal-status {
 	margin-top: 12px;
 	min-height: 20px;
 }
 
-#tsp-import-progress {
+#tsp-import-progress,
+#tsp-signal-progress {
 	display: block;
 	margin-top: 8px;
 	width: min(100%, 460px);
 }
 
-#tsp-import-progress[hidden] {
+#tsp-import-progress[hidden],
+#tsp-signal-progress[hidden] {
 	display: none;
 }
 

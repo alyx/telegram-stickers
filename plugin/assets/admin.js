@@ -6,6 +6,10 @@
 	const button = document.getElementById( 'tsp-import-button' );
 	const status = document.getElementById( 'tsp-import-status' );
 	const progress = document.getElementById( 'tsp-import-progress' );
+	const signalInput = document.getElementById( 'tsp-signal-url' );
+	const signalButton = document.getElementById( 'tsp-signal-button' );
+	const signalStatus = document.getElementById( 'tsp-signal-status' );
+	const signalProgress = document.getElementById( 'tsp-signal-progress' );
 	const list = document.getElementById( 'tsp-pack-list' );
 	const manualHeading = document.getElementById( 'tsp-manual-heading' );
 	const manualTitle = document.getElementById( 'tsp-manual-title' );
@@ -14,7 +18,7 @@
 	const manualCancel = document.getElementById( 'tsp-manual-cancel' );
 	const manualImages = document.getElementById( 'tsp-manual-images' );
 	const manualStatus = document.getElementById( 'tsp-manual-status' );
-	if ( ! config || ! input || ! button || ! status || ! progress || ! list || ! manualTitle || ! manualAdd || ! manualSave || ! manualCancel || ! manualImages || ! manualStatus ) {
+	if ( ! config || ! input || ! button || ! status || ! progress || ! signalInput || ! signalButton || ! signalStatus || ! signalProgress || ! list || ! manualTitle || ! manualAdd || ! manualSave || ! manualCancel || ! manualImages || ! manualStatus ) {
 		return;
 	}
 	let manualPackId = 0;
@@ -46,7 +50,7 @@
 		list.replaceChildren();
 		if ( ! packs.length ) {
 			const empty = document.createElement( 'p' );
-			empty.textContent = __( 'No sticker packs yet. Create one above or import from Telegram.', 'telegram-stickers' );
+			empty.textContent = __( 'No sticker packs yet. Create one above or import from Telegram or Signal.', 'telegram-stickers' );
 			list.append( empty );
 			return;
 		}
@@ -65,7 +69,8 @@
 				importing: __( 'Importing', 'telegram-stickers' ),
 				error: __( 'Needs retry', 'telegram-stickers' ),
 			};
-			detail.textContent = count + ' · ' + ( state[ pack.status ] || state.importing );
+			const sources = { manual: __( 'Your images', 'telegram-stickers' ), telegram: 'Telegram', signal: 'Signal' };
+			detail.textContent = ( sources[ pack.source ] || pack.source ) + ' · ' + count + ' · ' + ( state[ pack.status ] || state.importing );
 			card.append( detail );
 			const previews = document.createElement( 'div' );
 			previews.className = 'tsp-pack-previews';
@@ -107,6 +112,15 @@
 					input.value = pack.name;
 					input.focus();
 					button.click();
+				} );
+				card.append( refresh );
+			} else if ( pack.source === 'signal' ) {
+				const refresh = document.createElement( 'button' );
+				refresh.type = 'button';
+				refresh.className = 'button button-secondary';
+				refresh.textContent = __( 'Refresh pack', 'telegram-stickers' );
+				refresh.addEventListener( 'click', function() {
+					runImport( 'signal/refresh', { packId: pack.id }, signalButton, signalStatus, signalProgress, true );
 				} );
 				card.append( refresh );
 			}
@@ -238,44 +252,59 @@
 		}
 	}
 
-	async function importPack() {
+	async function runImport( route, payload, control, message, meter, isSignal ) {
+		control.disabled = true;
+		meter.hidden = true;
+		message.className = '';
+		message.textContent = __( 'Loading pack details…', 'telegram-stickers' );
+		try {
+			const job = await request( route, payload );
+			meter.max = job.total;
+			meter.value = 0;
+			meter.hidden = false;
+			do {
+				message.textContent = sprintf( __( 'Importing sticker %1$d of %2$d…', 'telegram-stickers' ), job.done + 1, job.total );
+				const step = await request( 'import/step', { packId: job.packId } );
+				job.done = step.done;
+				job.skipped = step.skipped === undefined ? job.skipped : step.skipped;
+				meter.value = step.done;
+				if ( step.complete ) {
+					break;
+				}
+			} while ( job.done < job.total );
+			message.className = 'tsp-success';
+			const importedCount = isSignal ? job.total - job.skipped : job.total;
+			const imported = sprintf( _n( 'Imported %d static sticker', 'Imported %d static stickers', importedCount, 'telegram-stickers' ), importedCount );
+			const skipped = job.skipped ? sprintf( _n( '; skipped %d animated or video sticker', '; skipped %d animated or video stickers', job.skipped, 'telegram-stickers' ), job.skipped ) : '';
+			message.textContent = imported + skipped + __( '. Ready to use in the editor.', 'telegram-stickers' );
+			if ( isSignal ) {
+				signalInput.value = '';
+			}
+			await loadPacks();
+		} catch ( error ) {
+			message.className = 'tsp-error';
+			message.textContent = error.message + ' ' + __( 'You can retry the import; saved stickers will be reused.', 'telegram-stickers' );
+		} finally {
+			control.disabled = false;
+		}
+	}
+
+	button.addEventListener( 'click', function() {
 		const pack = input.value.trim();
 		if ( ! pack ) {
 			input.focus();
 			return;
 		}
-		button.disabled = true;
-		progress.hidden = true;
-		status.className = '';
-		status.textContent = __( 'Loading pack details…', 'telegram-stickers' );
-		try {
-			const job = await request( 'import/start', { pack } );
-			progress.max = job.total;
-			progress.value = 0;
-			progress.hidden = false;
-			do {
-				status.textContent = sprintf( __( 'Importing sticker %1$d of %2$d…', 'telegram-stickers' ), job.done + 1, job.total );
-				const step = await request( 'import/step', { packId: job.packId } );
-				job.done = step.done;
-				progress.value = step.done;
-				if ( step.complete ) {
-					break;
-				}
-			} while ( job.done < job.total );
-			status.className = 'tsp-success';
-			const imported = sprintf( _n( 'Imported %d static sticker', 'Imported %d static stickers', job.total, 'telegram-stickers' ), job.total );
-			const skipped = job.skipped ? sprintf( _n( '; skipped %d animated or video sticker', '; skipped %d animated or video stickers', job.skipped, 'telegram-stickers' ), job.skipped ) : '';
-			status.textContent = imported + skipped + __( '. Ready to use in the editor.', 'telegram-stickers' );
-			await loadPacks();
-		} catch ( error ) {
-			status.className = 'tsp-error';
-			status.textContent = error.message + ' ' + __( 'You can retry the import; saved stickers will be reused.', 'telegram-stickers' );
-		} finally {
-			button.disabled = false;
+		runImport( 'import/start', { pack }, button, status, progress, false );
+	} );
+	signalButton.addEventListener( 'click', function() {
+		const pack = signalInput.value.trim();
+		if ( ! pack ) {
+			signalInput.focus();
+			return;
 		}
-	}
-
-	button.addEventListener( 'click', importPack );
+		runImport( 'signal/start', { pack }, signalButton, signalStatus, signalProgress, true );
+	} );
 	manualAdd.addEventListener( 'click', addManualImages );
 	manualSave.addEventListener( 'click', saveManual );
 	manualCancel.addEventListener( 'click', resetManual );
@@ -283,6 +312,12 @@
 		if ( event.key === 'Enter' ) {
 			event.preventDefault();
 			button.click();
+		}
+	} );
+	signalInput.addEventListener( 'keydown', function( event ) {
+		if ( event.key === 'Enter' ) {
+			event.preventDefault();
+			signalButton.click();
 		}
 	} );
 	loadPacks();
